@@ -8,6 +8,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,6 +24,9 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
+
+import fun.baseFuncion;
+import fun.baseFuncion.*;
 
 public class TestView extends JFrame {
     /**
@@ -58,8 +62,50 @@ public class TestView extends JFrame {
 		  enProgressBar = new JProgressBar(0, 100);
 		  deProgressBar = new JProgressBar(0, 100);
 		  
+//		  final baseFuncion fun = new baseFuncion();
+		  
 		  encryptButton = new JButton("Encrypt");
+		  encryptButton.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+				String inputFilePath = enFile.getText();
+	            String outputFilePath = endFile.getText();
+	            String key = enKey.getText();
+	            byte[] inputBytes;
+				try {
+					inputBytes = baseFuncion.readFile(inputFilePath);
+					byte[] keyBytes = key.getBytes();
+					byte[] encryptedBytes = baseFuncion.encrypt(inputBytes, keyBytes);
+					baseFuncion.writeFile(outputFilePath, encryptedBytes);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+	            System.out.println("Encryption completed.");
+	            enTime.setText("ok");
+			}
+		});
 	      decryptButton = new JButton("Decrypt");
+	      decryptButton.addActionListener(new ActionListener() {
+	    	  
+	    	  public void actionPerformed(ActionEvent e) {
+	    		  String inputFilePath = deFile.getText();
+	    		  String outputFilePath = dedFile.getText();
+	    		  String key = deKey.getText();
+	    		  byte[] inputBytes;
+	    		  try {
+	    			  inputBytes = baseFuncion.readFile(inputFilePath);
+	    			  byte[] keyBytes = key.getBytes();
+	    			  byte[] decryptedBytes = baseFuncion.decrypt(inputBytes, keyBytes);
+	    			  baseFuncion.writeFile(outputFilePath, encryptedBytes);
+	    		  } catch (IOException e1) {
+	    			  // TODO Auto-generated catch block
+	    			  e1.printStackTrace();
+	    		  }
+	    		  System.out.println("Encryption completed.");
+	    		  enTime.setText("ok");
+	    	  }
+	      });
 	      encryptButton.setBackground(redButton);
 	      decryptButton.setBackground(greenButton);
 	      
