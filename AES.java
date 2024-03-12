@@ -84,89 +84,96 @@ public class AES {
     }
 
     public static byte[] encrypt(byte[] input, byte[] key) {
-        byte[][] state = new byte[4][Nb];
-        byte[] roundKey = new byte[4 * Nb * (Nr + 1)];
+		byte[][] state = new byte[4][Nb];
+		byte[] roundKey = new byte[4 * Nb * (Nr + 1)];
 
-        expandKey(key, roundKey);
+		expandKey(key, roundKey);
 
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0;
+		//convert a one-dimensional array to a two-dimensional array
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < Nb; j++) {
+				state[i][j] = input[i + 4 * j];
+			}
+		}
 
- j < Nb; j++) {
-                state[i][j] = input[i + 4 * j];
-            }
-        }
+		addRoundKey(state, roundKey, 0);
 
-        addRoundKey(state, roundKey, 0);
+		for (int round = 1; round < Nr; ++round) {
+			subBytes(state);
+			shiftRows(state);
+			mixColumns(state);
+			addRoundKey(state, roundKey, round);
+		}
 
-        for (int round = 1; round < Nr; ++round) {
-            subBytes(state);
-            shiftRows(state);
-            mixColumns(state);
-            addRoundKey(state, roundKey, round);
-        }
+		subBytes(state);
+		shiftRows(state);
+		addRoundKey(state, roundKey, Nr);
 
-        subBytes(state);
-        shiftRows(state);
-        addRoundKey(state, roundKey, Nr);
+		byte[] output = new byte[4 * Nb];
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < Nb; ++j) {
+				output[i + 4 * j] = state[i][j];
+			}
+		}
+		return output;
+	}
 
-        byte[] output = new byte[4 * Nb];
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < Nb; ++j) {
-                output[i + 4 * j] = state[i][j];
-            }
-        }
-        return output;
-    }
-    
-    
+	private static void expandKey(byte[] key, byte[] roundKey) {
+		int i, k;
+		byte[] temp = new byte[4];
 
-    private static void expandKey(byte[] key, byte[] roundKey) {
-        int i, k;
-        byte[] temp = new byte[4];
+		// => i = null
+		for (i = 0; i < Nk; ++i) {
+			roundKey[i * 4] = key[i * 4];
+			roundKey[i * 4 + 1] = key[i * 4 + 1];
+			roundKey[i * 4 + 2] = key[i * 4 + 2];
+			roundKey[i * 4 + 3] = key[i * 4 + 3];
+		}
+		// => i = 4
 
-        for (i = 0; i < Nk; ++i) {
-            roundKey[i * 4] = key[i * 4];
-            roundKey[i * 4 + 1] = key[i * 4 + 1];
-            roundKey[i * 4 + 2] = key[i * 4 + 2];
-            roundKey[i * 4 + 3] = key[i * 4 + 3];
-        }
+		while (i < (Nb * (Nr + 1))) {
+			for (k = 0; k < 4; ++k) {
+				temp[k] = roundKey[(i - 1) * 4 + k];
+			}
 
-        while (i < (Nb * (Nr + 1))) {
-            for (k = 0; k < 4; ++k) {
-                temp[k] = roundKey[(i - 1) * 4 + k];
-            }
+			if (i % Nk == 0) {
+				temp = subWord(rotWord(temp));
+				temp[0] ^= Rcon[i / Nk];
+			} else if (Nk > 6 && i % Nk == 4) {
+				temp = subWord(temp);
+			}
 
-            if (i % Nk == 0) {
-                temp = subWord(rotWord(temp));
-                temp[0] ^= Rcon[i / Nk];
-            } else if (Nk > 6 && i % Nk == 4) {
-                temp = subWord(temp);
-            }
+			roundKey[i * 4 + 0] = (byte) (roundKey[(i - Nk) * 4 + 0] ^ temp[0]);
+			roundKey[i * 4 + 1] = (byte) (roundKey[(i - Nk) * 4 + 1] ^ temp[1]);
+			roundKey[i * 4 + 2] = (byte) (roundKey[(i - Nk) * 4 + 2] ^ temp[2]);
+			roundKey[i * 4 + 3] = (byte) (roundKey[(i - Nk) * 4 + 3] ^ temp[3]);
+			++i;
+		}
+	}
 
-            roundKey[i * 4 + 0] = (byte) (roundKey[(i - Nk) * 4 + 0] ^ temp[0]);
-            roundKey[i * 4 + 1] = (byte) (roundKey[(i - Nk) * 4 + 1] ^ temp[1]);
-            roundKey[i * 4 + 2] = (byte) (roundKey[(i - Nk) * 4 + 2] ^ temp[2]);
-            roundKey[i * 4 + 3] = (byte) (roundKey[(i - Nk) * 4 + 3] ^ temp[3]);
-            ++i;
-        }
-    }
+	// Get the corresponding value in SBox
+	private static byte[] subWord(byte[] word) {
+		for (int i = 0; i < 4; ++i) {
+			/*	EX: word[1] = 01001101
+			 * 	>>> 4 = shift right 4 bits
+			 * 	& 0x0F = get (Lowest 4 bits)
+			 * 	word[1] >>> 4 & 0x0F = 0100 (Highest 4 bits)
+			 *  word[1] & 0x0F = 0100 (Highest 4 bits)
+			 */
+			word[i] = (byte) (Sbox[(word[i] >>> 4) & 0x0F][word[i] & 0x0F]);
+		}
+		return word;
+	}
 
-    private static byte[] subWord(byte[] word) {
-        for (int i = 0; i < 4; ++i) {
-            word[i] = (byte) (Sbox[(word[i] >>> 4) & 0x0F][word[i] & 0x0F]);
-        }
-        return word;
-    }
-
-    private static byte[] rotWord(byte[] word) {
-        byte temp = word[0];
-        word[0] = word[1];
-        word[1] = word[2];
-        word[2] = word[3];
-        word[3] = temp;
-        return word;
-    }
+	// Move last bit to first. remaining bits index+1
+	private static byte[] rotWord(byte[] word) {
+		byte temp = word[0];
+		word[0] = word[1];
+		word[1] = word[2];
+		word[2] = word[3];
+		word[3] = temp;
+		return word;
+	}
 
     private static void subBytes(byte[][] state) {
         for (int i = 0; i < 4; ++i) {

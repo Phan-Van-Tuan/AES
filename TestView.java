@@ -96,8 +96,8 @@ public class TestView extends JFrame {
 	    		  try {
 	    			  inputBytes = baseFuncion.readFile(inputFilePath);
 	    			  byte[] keyBytes = key.getBytes();
-	    			  byte[] decryptedBytes = baseFuncion.decrypt(inputBytes, keyBytes);
-	    			  baseFuncion.writeFile(outputFilePath, encryptedBytes);
+//	    			  byte[] decryptedBytes = baseFuncion.decrypt(inputBytes, keyBytes);
+//	    			  baseFuncion.writeFile(outputFilePath, encryptedBytes);
 	    		  } catch (IOException e1) {
 	    			  // TODO Auto-generated catch block
 	    			  e1.printStackTrace();
