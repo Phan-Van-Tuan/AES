@@ -1,11 +1,4 @@
-package main;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-
+package main.fun;
 
 public class AES {
 	private static final byte[][] Sbox = {
@@ -27,7 +20,6 @@ public class AES {
 	        {(byte) 0x8c, (byte) 0xa1, (byte) 0x89, (byte) 0x0d, (byte) 0xbf, (byte) 0xe6, (byte) 0x42, (byte) 0x68, (byte) 0x41, (byte) 0x99, (byte) 0x2d, (byte) 0x0f, (byte) 0xb0, (byte) 0x54, (byte) 0xbb, (byte) 0x16}
 	};
 
-
 	private static final byte[][] invSbox = {
 	        {(byte) 0x52, (byte) 0x09, (byte) 0x6a, (byte) 0xd5, (byte) 0x30, (byte) 0x36, (byte) 0xa5, (byte) 0x38, (byte) 0xbf, (byte) 0x40, (byte) 0xa3, (byte) 0x9e, (byte) 0x81, (byte) 0xf3, (byte) 0xd7, (byte) 0xfb},
 	        {(byte) 0x7c, (byte) 0xe3, (byte) 0x39, (byte) 0x82, (byte) 0x9b, (byte) 0x2f, (byte) 0xff, (byte) 0x87, (byte) 0x34, (byte) 0x8e, (byte) 0x43, (byte) 0x44, (byte) 0xc4, (byte) 0xde, (byte) 0xe9, (byte) 0xcb},
@@ -48,44 +40,17 @@ public class AES {
 	};
 
 
-    private static final int[] Rcon = {
+	private static final int[] Rcon = {
             0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
     };
 
-    private static final int Nb = 4;
-    private static final int Nk = 4;
-    private static final int Nr = 10;
-
-    public static void main(String[] args) {
-        try {
-            String inputFilePath = "D:\\IDE Eclipse\\AES\\src\\main\\input.txt";
-            String outputFilePath = "D:\\IDE Eclipse\\AES\\src\\main\\output.txt";
-            String key = "Thats my Kung Fu";
-            byte[] inputBytes = readFile(inputFilePath);
-            byte[] keyBytes = key.getBytes();
-
-            byte[] encryptedBytes = encrypt(inputBytes, keyBytes);
-            writeFile(outputFilePath, encryptedBytes);
-
-            System.out.println("Encryption completed.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static byte[] readFile(String filePath) throws IOException {
-        Path path = Paths.get(filePath);
-        return Files.readAllBytes(path);
-    }
-
-    public static void writeFile(String filePath, byte[] data) throws IOException {
-        Path path = Paths.get(filePath);
-        Files.write(path, data);
-    }
-
-    public static byte[] encrypt(byte[] input, byte[] key) {
-		byte[][] state = new byte[4][Nb];
-		byte[] roundKey = new byte[4 * Nb * (Nr + 1)];
+	private static final int Nb = 4;
+	private static final int Nk = 4;
+	private static final int Nr = 10;
+	
+	public static byte[] encrypt(byte[] input, byte[] key) {
+		byte[][] state = new byte[4][ Nb ];
+		byte[] roundKey = new byte[4 * Nb * ( Nr + 1)];
 
 		expandKey(key, roundKey);
 
@@ -117,7 +82,43 @@ public class AES {
 		}
 		return output;
 	}
+	
+	public static byte[] decrypt(byte[] input, byte[] key) {
+	    byte[][] state = new byte[4][Nb];
+	    byte[] roundKey = new byte[4 * Nb * (Nr + 1)];
 
+	    expandKey(key, roundKey);
+
+	    // Convert a one-dimensional array to a two-dimensional array
+	    for (int i = 0; i < 4; i++) {
+	        for (int j = 0; j < Nb; j++) {
+	            state[i][j] = input[i + 4 * j];
+	        }
+	    }
+
+	    addRoundKey(state, roundKey, Nr);
+
+	    for (int round = Nr - 1; round >= 1; --round) {
+	        invShiftRows(state);
+	        invSubBytes(state);
+	        addRoundKey(state, roundKey, round);
+	        invMixColumns(state);
+	    }
+
+	    invShiftRows(state);
+	    invSubBytes(state);
+	    addRoundKey(state, roundKey, 0);
+
+	    byte[] output = new byte[4 * Nb];
+	    for (int i = 0; i < 4; ++i) {
+	        for (int j = 0; j < Nb; ++j) {
+	            output[i + 4 * j] = state[i][j];
+	        }
+	    }
+	    return output;
+	}
+
+	
 	private static void expandKey(byte[] key, byte[] roundKey) {
 		int i, k;
 		byte[] temp = new byte[4];
@@ -138,8 +139,6 @@ public class AES {
 
 			if (i % Nk == 0) {
 				temp = subWord(rotWord(temp));
-				
-				//  ^  = XOR ( Similar things = false, different things = true)
 				temp[0] ^= Rcon[i / Nk];
 			}
 
@@ -160,7 +159,7 @@ public class AES {
 			 * 	word[1] >>> 4 & 0x0F = 0100 (Highest 4 bits)
 			 *  word[1] & 0x0F = 0100 (Highest 4 bits)
 			 */
-			word[i] = (byte) (Sbox[(word[i] >>> 4) & 0x0F][word[i] & 0x0F]);
+			word[i] = (byte) ( Sbox[(word[i] >>> 4) & 0x0F][word[i] & 0x0F]);
 		}
 		return word;
 	}
@@ -175,148 +174,105 @@ public class AES {
 		return word;
 	}
 
-    private static void subBytes(byte[][] state) {
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < Nb; ++j) {
-            	// Same with subWord
-                state[i][j] = (byte) (Sbox[(state[i][j] >>> 4) & 0x0F][state[i][j] & 0x0F]);
-            }
-        }
-    }
+	private static void subBytes(byte[][] state) {
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < Nb; ++j) {
+				// Same with subWord
+				state[i][j] = (byte) (Sbox[(state[i][j] >> 4) & 0x0F][state[i][j] & 0x0F]);
+			}
+		}
+	}
+	// Function to perform InvSubBytes transformation
+	private static void invSubBytes(byte[][] state) {
+		for (int i = 0; i < Nb; i++) {
+			for (int j = 0; j < Nb; j++) {
+				state[i][j] = (byte) (invSbox[state[i][j] >> 4 & 0x0F][state[i][j] & 0x0f]);
+			}
+		}
+	}
 
-    private static void shiftRows(byte[][] state) {
-        byte[] temp = new byte[4];
-        for (int i = 1; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                temp[j] = state[i][(j + i) % Nb];
-            }
-            for (int j = 0; j < 4; ++j) {
-                state[i][j] = temp[j];
-            }
-        }
-    }
-    
-    // Function to perform InvShiftRows transformation
+	private static void shiftRows(byte[][] state) {
+		byte[] temp = new byte[4];
+		for (int i = 1; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				temp[j] = state[i][(j + i) % Nb];
+			}
+			for (int j = 0; j < 4; ++j) {
+				state[i][j] = temp[j];
+			}
+		}
+	}
+	
+	// Function to perform InvShiftRows transformation
     private static void invShiftRows(byte[][] state) {
-        // row 1
-        byte temp = state[1][3];
-        state[1][3] = state[1][2];
-        state[1][2] = state[1][1];
-        state[1][1] = state[1][0];
-        state[1][0] = temp;
-
-        // row 2
-        temp = state[2][2];
-        state[2][2] = state[2][0];
-        state[2][0] = temp;
-        temp = state[2][3];
-        state[2][3] = state[2][1];
-        state[2][1] = temp;
-
-        // row 3
-        temp = state[3][0];
-        state[3][0] = state[3][1];
-        state[3][1] = state[3][2];
-        state[3][2] = state[3][3];
-        state[3][3] = temp;
+    	byte[] temp = new byte[4];
+		for (int i = 1; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				temp[(j + i) % Nb] = state[i][j];
+			}
+			for (int j = 0; j < 4; ++j) {
+				state[i][j] = temp[j];
+			}
+		}
     }
 
     private static void mixColumns(byte[][] state) {
-        byte[][] temp = new byte[4][4];
-        for (int i = 0; i < 4; ++i) {
-            temp[0][i] = (byte) (gfMul(0x02, state[0][i]) ^ gfMul(0x03, state[1][i]) ^ state[2][i] ^ state[3][i]);
-            temp[1][i] = (byte) (state[0][i] ^ gfMul(0x02, state[1][i]) ^ gfMul(0x03, state[2][i]) ^ state[3][i]);
-            temp[2][i] = (byte) (state[0][i] ^ state[1][i] ^ gfMul(0x02, state[2][i]) ^ gfMul(0x03, state[3][i]));
-            temp[3][i] = (byte) (gfMul(0x03, state[0][i]) ^ state[1][i] ^ state[2][i] ^ gfMul(0x02, state[3][i]));
-        }
-        for (int i = 0; i < 4; ++i) {
+        int[] temp = new int[4];
+        for (int i = 0; i < Nb; ++i) {
+            temp[0] = mul02(state[0][i]) ^ mul03(state[1][i]) ^ state[2][i] ^ state[3][i];
+            temp[1] = state[0][i] ^ mul02(state[1][i]) ^ mul03(state[2][i]) ^ state[3][i];
+            temp[2] = state[0][i] ^ state[1][i] ^ mul02(state[2][i]) ^ mul03(state[3][i]);
+            temp[3] = mul03(state[0][i]) ^ state[1][i] ^ state[2][i] ^ mul02(state[3][i]);
+
             for (int j = 0; j < 4; ++j) {
-                state[i][j] = temp[i][j];
+                state[j][i] = (byte) (temp[j] & 0xFF);
             }
         }
     }
-
-    private static void addRoundKey(byte[][] state, byte[] roundKey, int round) {
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < Nb; ++j) {
-                state[i][j] ^= roundKey[round * Nb * 4 + i * Nb + j];
-            }
-        }
-    }
-
-    private static byte gfMul(int a, byte b) {
-        byte result = 0;
-        while (a != 0) {
-            if ((a & 1) != 0) {
-                result ^= b;
-            }
-            boolean highBitSet = (b & 0x80) != 0;
-            b <<= 1;
-            if (highBitSet) {
-                b ^= 0x1b;
-            }
-            a >>= 1;
-        }
-        return result;
-    }
-
-
-    // Function to perform InvSubBytes transformation
-    private static void invSubBytes(byte[][] state) {
-        int Nb = 4;
-        for (int i = 0; i < Nb; i++) {
-            for (int j = 0; j < Nb; j++) {
-                state[i][j] = invSbox[state[i][j] >> 4][state[i][j] & 0x0f];
-            }
-        }
-    }
-
+    
     private static void invMixColumns(byte[][] state) {
-        int Nb = 4;
-        for (int i = 0; i < Nb; i++) {
-            byte a = state[0][i];
-            byte b = state[1][i];
-            byte c = state[2][i];
-            byte d = state[3][i];
-            state[0][i] = (byte) (mul0e(a) ^ mul0b(b) ^ mul0d(c) ^ mul09(d));
-            state[1][i] = (byte) (mul09(a) ^ mul0e(b) ^ mul0b(c) ^ mul0d(d));
-            state[2][i] = (byte) (mul0d(a) ^ mul09(b) ^ mul0e(c) ^ mul0b(d));
-            state[3][i] = (byte) (mul0b(a) ^ mul0d(b) ^ mul09(c) ^ mul0e(d));
+        for (int i = 0; i < Nb; ++i) {
+            int s0 = state[0][i];
+            int s1 = state[1][i];
+            int s2 = state[2][i];
+            int s3 = state[3][i];
+
+            state[0][i] = (byte) (mul0e(s0) ^ mul0b(s1) ^ mul0d(s2) ^ mul09(s3));
+            state[1][i] = (byte) (mul09(s0) ^ mul0e(s1) ^ mul0b(s2) ^ mul0d(s3));
+            state[2][i] = (byte) (mul0d(s0) ^ mul09(s1) ^ mul0e(s2) ^ mul0b(s3));
+            state[3][i] = (byte) (mul0b(s0) ^ mul0d(s1) ^ mul09(s2) ^ mul0e(s3));
         }
     }
-  //------------------Mul02-------------------------
-    private static byte mul02(byte value) {
-        if (value < 0x80) {
-            return (byte) (value << 1);
-        } else {
-            return (byte) ((value << 1) ^ 0x1b);
-        }
-    }
-
-    //------------------Mul03-------------------------
-    private static byte mul03(byte value) {
-        return (byte) (mul02(value) ^ value);
-    }
     
-  //------------------Mul09-------------------------
-    private static byte mul09(byte value) {
-        return (byte) (mul02(mul02(mul02(value))) ^ value);
-    }
-
-    //------------------Mul0b-------------------------
-    private static byte mul0b(byte value) {
-        return (byte) (mul02(mul02(mul02(value))) ^ mul02(value) ^ value);
-    }
-
-    //------------------Mul0d-------------------------
-    private static byte mul0d(byte value) {
-        return (byte) (mul02(mul02(mul02(value))) ^ mul02(mul02(value)) ^ (value));
-    }
-
-    //------------------Mul0e-------------------------
-    private static byte mul0e(byte value) {
-        return (byte) (mul02(mul02(mul02(value))) ^ mul02(mul02(value)) ^ mul02(value));
-    }
+    private static void addRoundKey(byte[][] state, byte[] roundKey, int round) {
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < Nb; ++j) {
+				state[i][j] ^= roundKey[round * Nb * 4 + i * Nb + j];
+			}
+		}
+	}
     
-    
+    private static int mul02(int value) {
+        return ((value & 0x80) == 0) ? (value << 1) : ((value << 1) ^ 0x1B);
+    }
+
+    private static int mul03(int value) {
+        return mul02(value) ^ value;
+    }
+
+    private static int mul09(int b) {
+        return mul02(mul02(mul02(b))) ^ b;
+    }
+
+    private static int mul0b(int b) {
+        return mul02(mul02(mul02(b))) ^ mul02(b) ^ b;
+    }
+
+    private static int mul0d(int b) {
+        return mul02(mul02(mul02(b))) ^ mul02(mul02(b)) ^ b;
+    }
+
+    private static int mul0e(int b) {
+        return mul02(mul02(mul02(b))) ^ mul02(mul02(b)) ^ mul02(b);
+    }
 }
