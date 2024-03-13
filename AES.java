@@ -138,9 +138,9 @@ public class AES {
 
 			if (i % Nk == 0) {
 				temp = subWord(rotWord(temp));
+				
+				//  ^  = XOR ( Similar things = false, different things = true)
 				temp[0] ^= Rcon[i / Nk];
-			} else if (Nk > 6 && i % Nk == 4) {
-				temp = subWord(temp);
 			}
 
 			roundKey[i * 4 + 0] = (byte) (roundKey[(i - Nk) * 4 + 0] ^ temp[0]);
@@ -178,6 +178,7 @@ public class AES {
     private static void subBytes(byte[][] state) {
         for (int i = 0; i < 4; ++i) {
             for (int j = 0; j < Nb; ++j) {
+            	// Same with subWord
                 state[i][j] = (byte) (Sbox[(state[i][j] >>> 4) & 0x0F][state[i][j] & 0x0F]);
             }
         }
@@ -193,6 +194,31 @@ public class AES {
                 state[i][j] = temp[j];
             }
         }
+    }
+    
+    // Function to perform InvShiftRows transformation
+    private static void invShiftRows(byte[][] state) {
+        // row 1
+        byte temp = state[1][3];
+        state[1][3] = state[1][2];
+        state[1][2] = state[1][1];
+        state[1][1] = state[1][0];
+        state[1][0] = temp;
+
+        // row 2
+        temp = state[2][2];
+        state[2][2] = state[2][0];
+        state[2][0] = temp;
+        temp = state[2][3];
+        state[2][3] = state[2][1];
+        state[2][1] = temp;
+
+        // row 3
+        temp = state[3][0];
+        state[3][0] = state[3][1];
+        state[3][1] = state[3][2];
+        state[3][2] = state[3][3];
+        state[3][3] = temp;
     }
 
     private static void mixColumns(byte[][] state) {
@@ -233,30 +259,7 @@ public class AES {
         }
         return result;
     }
- // Function to perform InvShiftRows transformation
-    private static void invShiftRows(byte[][] state) {
-        // row 1
-        byte temp = state[1][3];
-        state[1][3] = state[1][2];
-        state[1][2] = state[1][1];
-        state[1][1] = state[1][0];
-        state[1][0] = temp;
 
-        // row 2
-        temp = state[2][2];
-        state[2][2] = state[2][0];
-        state[2][0] = temp;
-        temp = state[2][3];
-        state[2][3] = state[2][1];
-        state[2][1] = temp;
-
-        // row 3
-        temp = state[3][0];
-        state[3][0] = state[3][1];
-        state[3][1] = state[3][2];
-        state[3][2] = state[3][3];
-        state[3][3] = temp;
-    }
 
     // Function to perform InvSubBytes transformation
     private static void invSubBytes(byte[][] state) {
