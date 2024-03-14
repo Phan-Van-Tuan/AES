@@ -73,16 +73,7 @@ public class View extends JFrame {
 				String inputFilePath = enFile.getText();
 				String outputFilePath = endFile.getText();
 				String key = enKey.getText();
-				byte[] inputBytes;
-				try {
-					inputBytes = HandleFile.readFile(inputFilePath);
-					byte[] keyBytes = key.getBytes();
-					byte[] encryptedBytes = AES.encrypt(inputBytes, keyBytes);
-					HandleFile.writeFile(outputFilePath, encryptedBytes);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				HandleFile.awaitEncrypt(inputFilePath, outputFilePath, key);
 				System.out.println("Encryption completed.");
 				enTime.setText("ok");
 			}
@@ -91,20 +82,11 @@ public class View extends JFrame {
 		decryptButton.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-//				String inputFilePath = deFile.getText();
-//				String outputFilePath = dedFile.getText();
-//				String key = deKey.getText();
-//				byte[] inputBytes;
-//				try {
-//					inputBytes = HandleFile.readFile(inputFilePath);
-//					byte[] keyBytes = key.getBytes();
-//	    			  byte[] decryptedBytes = AES.decrypt(inputBytes, keyBytes);
-//	    			  HandleFile.writeFile(outputFilePath, decryptedBytes);
-//				} catch (IOException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				}
-//				System.out.println("Encryption completed.");
+				String inputFilePath = deFile.getText();
+				String outputFilePath = dedFile.getText();
+				String key = deKey.getText();
+				HandleFile.awaitDecrypt(inputFilePath, outputFilePath, key);
+				System.out.println("Decryption completed.");
 				deTime.setText("ok");
 			}
 		});
