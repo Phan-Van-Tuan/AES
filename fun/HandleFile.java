@@ -7,12 +7,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+
 public class HandleFile {
 	private static final int BLOCK_SIZE = 16;
 	
 	public static byte[] readFile(String filePath) throws IOException {
 		Path path = Paths.get(filePath);
-		return Files.readAllBytes(path);
+		return Files.readAllBytes(path);	
 	}
 
 	public static void writeFile(String filePath, byte[] data) throws IOException {
@@ -34,8 +37,12 @@ public class HandleFile {
 	}
 
 	
-	public static void awaitEncrypt(String inputFilePath, String outputFilePath, String key) {
+	public static String awaitEncrypt(String inputFilePath, String outputFilePath, String key) {
+		if (!validateString(inputFilePath) || !validateString(outputFilePath) || !validateString(key)) {
+			return "";
+		}
 		try {
+			long startTime = System.currentTimeMillis();
             byte[] inputBytes = addPadding(readFile(inputFilePath));
             byte[] encryptedBytes = new byte[inputBytes.length];
             byte[] keyBytes = key.getBytes();
@@ -48,14 +55,23 @@ public class HandleFile {
                 System.arraycopy(temp, 0, encryptedBytes, i * BLOCK_SIZE, BLOCK_SIZE);
             }
             HandleFile.writeFile(outputFilePath, encryptedBytes);
+            long endTime = System.currentTimeMillis();
+		    long executionTime = endTime - startTime;
+		    String executionTimeString = String.format("%d milliseconds", executionTime);
+		    return executionTimeString;
         } catch (IOException e) {
-            System.err.println("Error: " + e);
+            JOptionPane.showMessageDialog(null, e.toString() , "ERROR", JOptionPane.ERROR_MESSAGE);
         }
+		return "";
 		
 	}
 	
-	public static void awaitDecrypt(String inputFilePath, String outputFilePath, String key) {
+	public static String awaitDecrypt(String inputFilePath, String outputFilePath, String key) {
+		if (!validateString(inputFilePath) || !validateString(outputFilePath) || !validateString(key)) {
+			return "";
+		}
 	    try {
+	    	long startTime = System.currentTimeMillis();
 	        byte[] inputBytes = readFile(inputFilePath);
 	        byte[] decryptedBytes = new byte[inputBytes.length];
 	        byte[] keyBytes = key.getBytes();
@@ -68,9 +84,21 @@ public class HandleFile {
 	            System.arraycopy(temp, 0, decryptedBytes, i * BLOCK_SIZE, BLOCK_SIZE);
 	        }
 	        HandleFile.writeFile(outputFilePath, removePadding(decryptedBytes));
+	        long endTime = System.currentTimeMillis();
+		    long executionTime = endTime - startTime;
+		    String executionTimeString = String.format("%d milliseconds", executionTime);
+		    return executionTimeString;
 	    } catch (IOException e) {
-	        e.printStackTrace();
+	    	JOptionPane.showMessageDialog(null, e.toString() , "ERROR", JOptionPane.ERROR_MESSAGE);
 	    }
+	    return "";
+	}
+	
+	private static boolean validateString(String text) {
+		if(text.isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 
 }
